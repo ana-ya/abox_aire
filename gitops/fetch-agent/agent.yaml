@@ -15,6 +15,7 @@ spec:
       - type: McpServer
         mcpServer:
           name: mcp-website-fetcher
+          namespace: kagent
           kind: MCPServer
           toolNames:
             - fetch
