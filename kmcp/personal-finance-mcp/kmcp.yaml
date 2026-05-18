@@ -1,0 +1,22 @@
+name: personal-finance-mcp
+framework: fastmcp-python
+version: 0.1.0
+description: Educational personal finance assistant that can calculate budgets, analyze spending categories, and estimate debt payoff using custom MCP tools.
+author: ana
+secrets:
+    local:
+        enabled: false
+        provider: env
+        file: .env.local
+    production:
+        enabled: false
+        provider: kubernetes
+        secretName: personal-finance-mcp-secrets-production
+        namespace: default
+    staging:
+        enabled: false
+        provider: kubernetes
+        secretName: personal-finance-mcp-secrets-staging
+        namespace: default
+created_at: 2026-05-18T12:29:57.771982+02:00
+updated_at: 2026-05-18T12:29:57.818573+02:00
