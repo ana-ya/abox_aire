@@ -30,6 +30,9 @@ ENV COMMIT_SHA=${COMMIT_SHA}
 ARG AGENT_VERSION=0.0.0
 ENV AGENT_VERSION=${AGENT_VERSION}
 
+ENV PYTHONPATH=/code
+ENV MCP_SERVER_URL=http://personal-finance-mcp:3000/mcp
+
 EXPOSE 8080
 
 CMD ["uv", "run", "uvicorn", "app.fast_api_app:app", "--host", "0.0.0.0", "--port", "8080"]

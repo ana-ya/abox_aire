@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personal-finance-agent
+  namespace: kagent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: personal-finance-agent
+  template:
+    metadata:
+      labels:
+        app: personal-finance-agent
+    spec:
+      containers:
+        - name: agent
+          image: ghcr.io/ana-ya/personal-finance-agent:0.1.3
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MCP_SERVER_URL
+              value: "http://personal-finance-mcp:3000/mcp"
+            - name: GOOGLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: google-api-key
+                  key: GOOGLE_API_KEY
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: personal-finance-agent
+  namespace: kagent
+spec:
+  selector:
+    app: personal-finance-agent
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
