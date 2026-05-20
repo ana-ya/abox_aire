@@ -1,85 +1,104 @@
 # personal-finance-agent
 
-Simple ReAct agent
-Agent generated with `agents-cli` version `0.2.0`
+This service is the orchestration layer between the Streamlit app and the Personal Finance MCP server. It exposes a standalone FastAPI API and runs the ADK root agent with an MCP toolset connected to `MCP_SERVER_URL`.
+
+## API
+
+The service exposes:
+
+- `GET /health`
+- `POST /ask`
+
+`POST /ask` supports conversational elicitation with optional in-memory session context:
+
+```json
+{
+  "prompt": "I make 3500 a month and need budgeting help.",
+  "session_id": "optional-session-id",
+  "context": {
+    "known_fields": {
+      "monthly_income": 3500
+    },
+    "missing_fields": [
+      "rent",
+      "food"
+    ]
+  }
+}
+```
+
+The response includes:
+
+```json
+{
+  "response": "I still need your rent, food, and debt details before I can run the finance tools.",
+  "session_id": "session-id",
+  "known_fields": {
+    "monthly_income": 3500
+  },
+  "missing_fields": [
+    "rent",
+    "food",
+    "transport",
+    "subscriptions",
+    "entertainment",
+    "savings_goal",
+    "debt_amount",
+    "annual_interest_rate",
+    "monthly_debt_payment"
+  ],
+  "needs_more_info": true
+}
+```
+
+## Sampling And Elicitation
+
+Sampling in this project means the LLM turns MCP tool outputs into user-facing financial guidance.
+
+Elicitation means the agent first asks for missing required financial fields, avoids inventing numbers, and only invokes the MCP finance tools when the profile is complete.
+
+## Architecture
+
+```text
+Streamlit App
+  -> Agent API (/ask)
+  -> ADK Agent
+  -> MCPToolset / MCP Client
+  -> personal-finance-mcp
+  -> finance tools
+```
+
+## Local Run
+
+Install dependencies in the agent environment, set the MCP endpoint, and run the standalone API:
+
+```bash
+cd agents/personal-finance-agent
+export MCP_SERVER_URL=http://localhost:3000/mcp
+uvicorn app.api:app --host 0.0.0.0 --port 8080
+```
+
+The Docker command for this service should be:
+
+```bash
+uvicorn app.api:app --host 0.0.0.0 --port 8080
+```
+
+## Kubernetes Notes
+
+- The Streamlit app should call `http://personal-finance-agent:8080/ask` inside the cluster.
+- The MCP server remains a separate service and is not called directly by the UI.
+- Existing deployment manifests are under `gitlessops/`.
 
 ## Project Structure
 
-```
+```text
 personal-finance-agent/
-├── app/         # Core agent code
-│   ├── agent.py               # Main agent logic
-│   └── app_utils/             # App utilities and helpers
-├── tests/                     # Unit, integration, and load tests
-├── GEMINI.md                  # AI-assisted development guide
-└── pyproject.toml             # Project dependencies
+├── app/
+│   ├── agent.py
+│   ├── api.py
+│   └── app_utils/
+├── tests/
+├── README.md
+└── pyproject.toml
 ```
-
-> 💡 **Tip:** Use [Gemini CLI](https://github.com/google-gemini/gemini-cli) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
-
-## Requirements
-
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **agents-cli**: Agents CLI - Install with `uv tool install google-agents-cli`
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-
-
-## Quick Start
-
-Install `agents-cli` and its skills if not already installed:
-
-```bash
-uvx google-agents-cli setup
-```
-
-Install required packages:
-
-```bash
-agents-cli install
-```
-
-Test the agent with a local web server:
-
-```bash
-agents-cli playground
-```
-
-You can also use features from the [ADK](https://adk.dev/) CLI with `uv run adk`.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `agents-cli install` | Install dependencies using uv                                                         |
-| `agents-cli playground` | Launch local development environment                                                  |
-| `agents-cli lint`    | Run code quality checks                                                               |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests                                                        |
-
-## 🛠️ Project Management
-
-| Command | What It Does |
-|---------|--------------|
-| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
-| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
-| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customizations |
-
----
-
-## Development
-
-Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - it auto-reloads on save.
-
-## Deployment
-
-```bash
-gcloud config set project <your-project-id>
-agents-cli deploy
-```
-
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
-
-## Observability
-
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
