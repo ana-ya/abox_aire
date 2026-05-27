@@ -51,6 +51,34 @@ The response includes:
 }
 ```
 
+## Agent Card
+
+This agent also exposes an Agent Card for discovery.
+
+Available endpoints:
+
+- `GET /.well-known/agent-card.json`
+- `GET /.well-known/agent.json`
+- `GET /agent-card`
+
+Fetch it locally with `curl`:
+
+```bash
+curl http://localhost:8080/.well-known/agent-card.json
+```
+
+Legacy-compatible path:
+
+```bash
+curl http://localhost:8080/.well-known/agent.json
+```
+
+Pretty-print with `jq` if installed:
+
+```bash
+curl -s http://localhost:8080/.well-known/agent-card.json | jq
+```
+
 ## Sampling And Elicitation
 
 Sampling in this project means the LLM turns MCP tool outputs into user-facing financial guidance.
@@ -76,6 +104,13 @@ Install dependencies in the agent environment, set the MCP endpoint, and run the
 cd agents/personal-finance-agent
 export MCP_SERVER_URL=http://localhost:3000/mcp
 uvicorn app.api:app --host 0.0.0.0 --port 8080
+```
+
+Then verify the health endpoint and Agent Card:
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8080/.well-known/agent-card.json
 ```
 
 The Docker command for this service should be:

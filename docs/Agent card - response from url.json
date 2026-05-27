@@ -1,0 +1,114 @@
+{
+  "name": "Personal Finance Agent",
+  "description": "Conversational personal finance agent for budgeting, savings planning, debt payoff guidance, and target purchase timelines. It orchestrates finance calculations through MCP tools.",
+  "version": "0.1.0",
+  "url": "http://localhost:8080/ask",
+  "provider": {
+    "organization": "abox_aire",
+    "url": "http://localhost:8080"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": true
+  },
+  "defaultInputModes": [
+    "text/plain",
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "text/plain",
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "budget-planning",
+      "name": "Budget Planning",
+      "description": "Builds a monthly budget from income and recurring expenses.",
+      "tags": [
+        "budget",
+        "personal-finance",
+        "monthly-planning"
+      ],
+      "examples": [
+        "Help me build a monthly budget.",
+        "I earn 3500 and want to understand my spending plan."
+      ],
+      "inputModes": [
+        "text/plain",
+        "application/json"
+      ],
+      "outputModes": [
+        "text/plain",
+        "application/json"
+      ]
+    },
+    {
+      "id": "savings-estimation",
+      "name": "Savings Estimation",
+      "description": "Estimates potential monthly savings from the user's budget.",
+      "tags": [
+        "savings",
+        "financial-planning"
+      ],
+      "examples": [
+        "How much can I save each month?",
+        "Can I save for a car with my current spending?"
+      ],
+      "inputModes": [
+        "text/plain",
+        "application/json"
+      ],
+      "outputModes": [
+        "text/plain",
+        "application/json"
+      ]
+    },
+    {
+      "id": "debt-payoff",
+      "name": "Debt Payoff Guidance",
+      "description": "Analyzes debt payoff scenarios when debt details are available.",
+      "tags": [
+        "debt",
+        "payoff",
+        "apr"
+      ],
+      "examples": [
+        "Help me plan my debt payoff.",
+        "I owe 10000 at 18% APR and pay 400 monthly."
+      ],
+      "inputModes": [
+        "text/plain",
+        "application/json"
+      ],
+      "outputModes": [
+        "text/plain",
+        "application/json"
+      ]
+    },
+    {
+      "id": "target-purchase-timeline",
+      "name": "Target Purchase Timeline",
+      "description": "Estimates how long it may take to save toward a target purchase such as a car.",
+      "tags": [
+        "goal",
+        "car",
+        "purchase",
+        "timeline"
+      ],
+      "examples": [
+        "How fast can I buy a car?",
+        "I want a car for 20k. How long will it take to save for it?"
+      ],
+      "inputModes": [
+        "text/plain",
+        "application/json"
+      ],
+      "outputModes": [
+        "text/plain",
+        "application/json"
+      ]
+    }
+  ],
+  "supportsAuthenticatedExtendedCard": false
+}

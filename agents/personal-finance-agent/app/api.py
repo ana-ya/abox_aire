@@ -4,7 +4,8 @@ import re
 from typing import Any
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.genai import types
@@ -178,6 +179,90 @@ class AskResponse(BaseModel):
     missing_fields: list[str]
     needs_more_info: bool
     messages: list[ChatMessage]
+
+
+def _build_base_url(request: Request) -> str:
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_proto and forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}"
+    return str(request.base_url).rstrip("/")
+
+
+def _build_agent_card(request: Request) -> dict[str, Any]:
+    base_url = _build_base_url(request)
+    return {
+        "name": "Personal Finance Agent",
+        "description": (
+            "Conversational personal finance agent for budgeting, savings planning, "
+            "debt payoff guidance, and target purchase timelines. It orchestrates "
+            "finance calculations through MCP tools."
+        ),
+        "version": "0.1.0",
+        "url": f"{base_url}/ask",
+        "provider": {
+            "organization": "abox_aire",
+            "url": base_url,
+        },
+        "capabilities": {
+            "streaming": False,
+            "pushNotifications": False,
+            "stateTransitionHistory": True,
+        },
+        "defaultInputModes": ["text/plain", "application/json"],
+        "defaultOutputModes": ["text/plain", "application/json"],
+        "skills": [
+            {
+                "id": "budget-planning",
+                "name": "Budget Planning",
+                "description": "Builds a monthly budget from income and recurring expenses.",
+                "tags": ["budget", "personal-finance", "monthly-planning"],
+                "examples": [
+                    "Help me build a monthly budget.",
+                    "I earn 3500 and want to understand my spending plan.",
+                ],
+                "inputModes": ["text/plain", "application/json"],
+                "outputModes": ["text/plain", "application/json"],
+            },
+            {
+                "id": "savings-estimation",
+                "name": "Savings Estimation",
+                "description": "Estimates potential monthly savings from the user's budget.",
+                "tags": ["savings", "financial-planning"],
+                "examples": [
+                    "How much can I save each month?",
+                    "Can I save for a car with my current spending?",
+                ],
+                "inputModes": ["text/plain", "application/json"],
+                "outputModes": ["text/plain", "application/json"],
+            },
+            {
+                "id": "debt-payoff",
+                "name": "Debt Payoff Guidance",
+                "description": "Analyzes debt payoff scenarios when debt details are available.",
+                "tags": ["debt", "payoff", "apr"],
+                "examples": [
+                    "Help me plan my debt payoff.",
+                    "I owe 10000 at 18% APR and pay 400 monthly.",
+                ],
+                "inputModes": ["text/plain", "application/json"],
+                "outputModes": ["text/plain", "application/json"],
+            },
+            {
+                "id": "target-purchase-timeline",
+                "name": "Target Purchase Timeline",
+                "description": "Estimates how long it may take to save toward a target purchase such as a car.",
+                "tags": ["goal", "car", "purchase", "timeline"],
+                "examples": [
+                    "How fast can I buy a car?",
+                    "I want a car for 20k. How long will it take to save for it?",
+                ],
+                "inputModes": ["text/plain", "application/json"],
+                "outputModes": ["text/plain", "application/json"],
+            },
+        ],
+        "supportsAuthenticatedExtendedCard": False,
+    }
 
 
 def _extract_text_from_content(content: types.Content | None) -> str:
@@ -492,6 +577,24 @@ def _log_debug_state(
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/.well-known/agent-card.json")
+async def well_known_agent_card(request: Request) -> JSONResponse:
+    agent_card = _build_agent_card(request)
+    return JSONResponse(agent_card, headers={"Cache-Control": "public, max-age=300"})
+
+
+@app.get("/.well-known/agent.json")
+async def legacy_well_known_agent_card(request: Request) -> JSONResponse:
+    agent_card = _build_agent_card(request)
+    return JSONResponse(agent_card, headers={"Cache-Control": "public, max-age=300"})
+
+
+@app.get("/agent-card")
+async def agent_card(request: Request) -> JSONResponse:
+    agent_card = _build_agent_card(request)
+    return JSONResponse(agent_card, headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.post("/ask", response_model=AskResponse)
