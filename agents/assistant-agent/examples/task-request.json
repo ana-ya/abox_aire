@@ -1,0 +1,7 @@
+{
+  "skill_id": "budget-planning",
+  "input": "Calculate how fast I can save money for a new car, it costs around 60000; my income 4200 with rent 1300, food 550, transport 180 and subscriptions 90",
+  "metadata": {
+    "source": "assistant-agent"
+  }
+}

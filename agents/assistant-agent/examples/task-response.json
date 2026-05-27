@@ -1,0 +1,35 @@
+{
+  "id": "b99139b0-975b-4e29-9911-e0e1d1b57f1c",
+  "context_id": "73e43e8f-e8c6-4831-9116-a9a04a08cf1a",
+  "skill_id": "budget-planning",
+  "input": "Calculate how fast I can save money for a new car, it costs around 60000; my income 4200 with rent 1300, food 550, transport 180 and subscriptions 90",
+  "metadata": {
+    "source": "assistant-agent"
+  },
+  "history": [
+    {
+      "state": "submitted",
+      "message": "Task received by the finance agent.",
+      "timestamp": "2026-05-27T20:57:38.892959+00:00"
+    },
+    {
+      "state": "working",
+      "message": "Task is being processed by the finance agent.",
+      "timestamp": "2026-05-27T20:57:38.893192+00:00"
+    },
+    {
+      "state": "completed",
+      "message": "Task completed successfully.",
+      "timestamp": "2026-05-27T20:57:41.992988+00:00"
+    }
+  ],
+  "status": {
+    "state": "completed",
+    "message": "Task completed successfully.",
+    "timestamp": "2026-05-27T20:57:41.992988+00:00"
+  },
+  "result": {
+    "response": "Based on your income of $4,200 and total monthly expenses of $2,120 (rent, food, transport, and subscriptions), you have $2,080 remaining each month.\n\nIf you put all of your remaining $2,080 toward your $60,000 car savings goal, it will take you approximately **29 months** (or about 2 years and 5 months) to reach your target.",
+    "skill_id": "budget-planning"
+  }
+}
