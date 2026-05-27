@@ -1,0 +1,14 @@
+apiVersion: agentregistry.dev/v1alpha1
+kind: SkillCatalog
+metadata:
+  name: cluster-diagnostics
+  namespace: agentregistry
+spec:
+  name: cluster-diagnostics
+  title: Cluster Diagnostics
+  description: The ability to analyze and diagnose Kubernetes Cluster issues.
+  version: "0.1.0"
+  category: kubernetes
+  repository:
+    source: kagent
+    url: k8s-agent

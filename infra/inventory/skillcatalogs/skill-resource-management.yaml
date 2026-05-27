@@ -1,0 +1,14 @@
+apiVersion: agentregistry.dev/v1alpha1
+kind: SkillCatalog
+metadata:
+  name: resource-management
+  namespace: agentregistry
+spec:
+  name: resource-management
+  title: Resource Management
+  description: The ability to manage and optimize Kubernetes resources.
+  version: "0.1.0"
+  category: kubernetes
+  repository:
+    source: kagent
+    url: k8s-agent
