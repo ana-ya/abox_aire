@@ -12,7 +12,8 @@ def test_agent_card_well_known_endpoint() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["name"] == "Personal Finance Agent"
-    assert payload["url"].endswith("/ask")
+    assert payload["url"] == "http://testserver"
+    assert payload["endpoints"]["taskCreate"].endswith("/a2a/tasks")
     assert any(skill["id"] == "budget-planning" for skill in payload["skills"])
 
 

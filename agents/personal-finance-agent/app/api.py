@@ -1,10 +1,11 @@
 import json
 import logging
 import re
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
@@ -153,6 +154,7 @@ runner = Runner(
     session_service=session_service,
 )
 conversation_sessions: dict[str, dict[str, Any]] = {}
+a2a_tasks: dict[str, dict[str, Any]] = {}
 
 
 class ChatMessage(BaseModel):
@@ -181,6 +183,17 @@ class AskResponse(BaseModel):
     messages: list[ChatMessage]
 
 
+class A2ATaskRequest(BaseModel):
+    skill_id: str
+    input: str
+    context_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+def _utc_now() -> str:
+    return datetime.now(UTC).isoformat()
+
+
 def _build_base_url(request: Request) -> str:
     forwarded_proto = request.headers.get("x-forwarded-proto")
     forwarded_host = request.headers.get("x-forwarded-host")
@@ -199,7 +212,7 @@ def _build_agent_card(request: Request) -> dict[str, Any]:
             "finance calculations through MCP tools."
         ),
         "version": "0.1.0",
-        "url": f"{base_url}/ask",
+        "url": base_url,
         "provider": {
             "organization": "abox_aire",
             "url": base_url,
@@ -208,6 +221,13 @@ def _build_agent_card(request: Request) -> dict[str, Any]:
             "streaming": False,
             "pushNotifications": False,
             "stateTransitionHistory": True,
+            "taskLifecycle": True,
+        },
+        "endpoints": {
+            "agentCard": f"{base_url}/.well-known/agent-card.json",
+            "taskCreate": f"{base_url}/a2a/tasks",
+            "taskGet": f"{base_url}/a2a/tasks/{{task_id}}",
+            "ask": f"{base_url}/ask",
         },
         "defaultInputModes": ["text/plain", "application/json"],
         "defaultOutputModes": ["text/plain", "application/json"],
@@ -574,6 +594,36 @@ def _log_debug_state(
     )
 
 
+def _new_status(state: str, message: str) -> dict[str, Any]:
+    return {
+        "state": state,
+        "message": message,
+        "timestamp": _utc_now(),
+    }
+
+
+async def _process_a2a_task(task_id: str) -> None:
+    task = a2a_tasks[task_id]
+    task["history"].append(_new_status("working", "Task is being processed by the finance agent."))
+    task["status"] = task["history"][-1]
+
+    try:
+        response_text = await _run_agent(task["input"], task["context_id"])
+    except Exception as exc:
+        logger.exception("A2A task failed")
+        task["history"].append(_new_status("failed", f"Task failed: {exc}"))
+        task["status"] = task["history"][-1]
+        task["result"] = {"error": str(exc)}
+        return
+
+    task["result"] = {
+        "response": response_text,
+        "skill_id": task["skill_id"],
+    }
+    task["history"].append(_new_status("completed", "Task completed successfully."))
+    task["status"] = task["history"][-1]
+
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -595,6 +645,40 @@ async def legacy_well_known_agent_card(request: Request) -> JSONResponse:
 async def agent_card(request: Request) -> JSONResponse:
     agent_card = _build_agent_card(request)
     return JSONResponse(agent_card, headers={"Cache-Control": "public, max-age=300"})
+
+
+@app.post("/a2a/tasks")
+async def create_a2a_task(
+    req: A2ATaskRequest,
+    background_tasks: BackgroundTasks,
+) -> JSONResponse:
+    if not req.input.strip():
+        raise HTTPException(status_code=400, detail="Task input must not be empty.")
+
+    task_id = str(uuid4())
+    context_id = req.context_id or str(uuid4())
+    task = {
+        "id": task_id,
+        "context_id": context_id,
+        "skill_id": req.skill_id,
+        "input": req.input,
+        "metadata": req.metadata,
+        "history": [_new_status("submitted", "Task received by the finance agent.")],
+        "status": _new_status("submitted", "Task received by the finance agent."),
+        "result": None,
+    }
+    a2a_tasks[task_id] = task
+    task["status"] = task["history"][0]
+    background_tasks.add_task(_process_a2a_task, task_id)
+    return JSONResponse(task)
+
+
+@app.get("/a2a/tasks/{task_id}")
+async def get_a2a_task(task_id: str) -> JSONResponse:
+    task = a2a_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    return JSONResponse(task)
 
 
 @app.post("/ask", response_model=AskResponse)
